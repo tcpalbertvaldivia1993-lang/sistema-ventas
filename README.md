@@ -1,34 +1,38 @@
-# Sistema de análisis de ventas con SQL
+# Sales Analysis System with SQL
 
-Proyecto de portafolio que muestra el ciclo completo de un análisis de datos con SQL:
+*[Versión en español](README.es.md)*
 
-1. **Diseño de una base de datos relacional** (SQLite) con claves primarias y foráneas, restricciones `CHECK`, índices y una vista.
-2. **Carga de datos** de ventas de una empresa ficticia (2 años, 5.000 pedidos).
-3. **12 consultas de análisis**, desde agregaciones básicas hasta funciones de ventana, CTE, cohortes y segmentación RFM.
-4. **Un informe automático** con tablas, conclusiones y recomendaciones de negocio: [`reports/informe.md`](reports/informe.md).
+A portfolio project that covers the full cycle of a data analysis with SQL:
 
-Solo usa la biblioteca estándar de Python, así que no hay que instalar nada.
+1. **Relational database design** (SQLite) with primary and foreign keys, `CHECK` constraints, indexes and a view.
+2. **Data loading** for a fictional company's sales (2 years, 5,000 orders).
+3. **12 analysis queries**, from basic aggregations to window functions, CTEs, cohort analysis and RFM segmentation.
+4. **An automated report** with tables, conclusions and business recommendations: [`reports/informe.md`](reports/informe.md).
 
-## Cómo ejecutarlo
+It only uses the Python standard library, so there is nothing to install.
+
+> **Note:** the code, table names and the generated report are in Spanish. Key terms: *ventas* = sales, *pedidos* = orders, *clientes* = customers, *productos* = products, *vendedores* = sales reps, *ingresos* = revenue, *margen* = margin, *informe* = report.
+
+## How to run it
 
 ```bash
-python3 main.py                        # crea ventas.db y genera reports/informe.md
-python3 -m unittest discover tests -v  # ejecuta las pruebas
+python3 main.py                        # creates ventas.db and generates reports/informe.md
+python3 -m unittest discover tests -v  # runs the tests
 ```
 
-Para explorar la base de datos a mano: `sqlite3 ventas.db` (o cualquier cliente como DB Browser for SQLite).
+To explore the database by hand: `sqlite3 ventas.db` (or any client such as DB Browser for SQLite).
 
-## Modelo de datos
+## Data model
 
 ```mermaid
 erDiagram
-    REGIONES   ||--o{ CLIENTES        : "tiene"
-    REGIONES   ||--o{ VENDEDORES      : "tiene"
-    CATEGORIAS ||--o{ PRODUCTOS       : "agrupa"
-    CLIENTES   ||--o{ PEDIDOS         : "realiza"
-    VENDEDORES ||--o{ PEDIDOS         : "gestiona"
-    PEDIDOS    ||--|{ DETALLE_PEDIDOS : "contiene"
-    PRODUCTOS  ||--o{ DETALLE_PEDIDOS : "aparece en"
+    REGIONES   ||--o{ CLIENTES        : "has"
+    REGIONES   ||--o{ VENDEDORES      : "has"
+    CATEGORIAS ||--o{ PRODUCTOS       : "groups"
+    CLIENTES   ||--o{ PEDIDOS         : "places"
+    VENDEDORES ||--o{ PEDIDOS         : "handles"
+    PEDIDOS    ||--|{ DETALLE_PEDIDOS : "contains"
+    PRODUCTOS  ||--o{ DETALLE_PEDIDOS : "appears in"
 
     CLIENTES { int id PK
                text nombre
@@ -53,57 +57,57 @@ erDiagram
                       real descuento }
 ```
 
-- El esquema está en [`sql/01_esquema.sql`](sql/01_esquema.sql).
-- La vista `v_ventas_detalle` ([`sql/02_vistas.sql`](sql/02_vistas.sql)) une todas las tablas y calcula el importe neto y el coste de cada línea. Así las consultas de análisis quedan más cortas y legibles.
+- The schema is in [`sql/01_esquema.sql`](sql/01_esquema.sql).
+- The `v_ventas_detalle` view ([`sql/02_vistas.sql`](sql/02_vistas.sql)) joins all the tables and calculates the net amount and cost of each order line, which keeps the analysis queries short and readable.
 
-## Análisis incluidos
+## Analyses included
 
-| # | Análisis | Técnicas SQL |
+| # | Analysis | SQL techniques |
 |---|---|---|
-| 01 | Indicadores clave (KPIs) | Agregaciones, subconsultas, `CASE` dentro de `SUM` |
-| 02 | Evolución mensual | CTE, `strftime`, `LAG` (mes anterior y mismo mes del año anterior) |
-| 03 | Productos más vendidos | `RANK()`, `SUM() OVER ()` para el % del total |
-| 04 | Rentabilidad por categoría | Margen bruto, % de ingresos frente a % de beneficio |
-| 05 | Ventas por región | `LEFT JOIN` desde la dimensión, `COUNT(DISTINCT)` |
-| 06 | Concentración de clientes (Pareto) | `ROW_NUMBER`, suma acumulada con `ROWS BETWEEN` |
-| 07 | Segmentación RFM | CTE encadenadas, `julianday`, `NTILE(4)`, `CASE` |
-| 08 | Retención por cohortes | Cohortes trimestrales, `EXISTS` correlacionado, `date()` |
-| 09 | Estacionalidad mensual | `VALUES` como tabla, índice estacional con `AVG() OVER ()` |
-| 10 | Día de la semana | `strftime('%w')`, orden personalizado |
-| 11 | Rendimiento comercial | Dos CTE combinadas, comparación con la media del equipo |
-| 12 | Productos sin ventas | Anti-join con `NOT EXISTS` |
+| 01 | Key performance indicators (KPIs) | Aggregations, subqueries, `CASE` inside `SUM` |
+| 02 | Monthly trend | CTE, `strftime`, `LAG` (previous month and same month last year) |
+| 03 | Best-selling products | `RANK()`, `SUM() OVER ()` for share of total |
+| 04 | Profitability by category | Gross margin, share of revenue vs. share of profit |
+| 05 | Sales by region | `LEFT JOIN` from the dimension table, `COUNT(DISTINCT)` |
+| 06 | Customer concentration (Pareto) | `ROW_NUMBER`, running total with `ROWS BETWEEN` |
+| 07 | RFM segmentation | Chained CTEs, `julianday`, `NTILE(4)`, `CASE` |
+| 08 | Cohort retention | Quarterly cohorts, correlated `EXISTS`, `date()` |
+| 09 | Monthly seasonality | `VALUES` as a table, seasonal index with `AVG() OVER ()` |
+| 10 | Day of the week | `strftime('%w')`, custom ordering |
+| 11 | Sales team performance | Two combined CTEs, comparison with the team average |
+| 12 | Products with no sales | Anti-join with `NOT EXISTS` |
 
-Cada archivo de [`sql/analisis/`](sql/analisis/) empieza con la pregunta de negocio que responde.
+Each file in [`sql/analisis/`](sql/analisis/) starts with the business question it answers.
 
-## Principales hallazgos
+## Key findings
 
-*(Resumen del informe; las cifras exactas están en [`reports/informe.md`](reports/informe.md).)*
+*(Summary of the report; exact figures are in [`reports/informe.md`](reports/informe.md).)*
 
-- **Crecimiento:** las ventas de 2025 superan a las de 2024 en torno a un 20 %.
-- **Volumen sin rentabilidad:** Electrónica aporta casi la mitad de los ingresos, pero su margen es del ~5 % y solo genera ~17 % del beneficio.
-- **Dependencia de pocos clientes:** el 20 % de los clientes genera más del 70 % de los ingresos, y los mejores son todos empresas.
-- **Clientes en riesgo:** unos 50 clientes que compraban a menudo llevan meses sin hacerlo.
-- **Estacionalidad marcada:** diciembre vende un 70 % más que un mes medio; julio y agosto, un 30 % menos.
-- **Equipo comercial:** un vendedor factura casi la mitad que la media y triplica la tasa de cancelaciones.
-- **Catálogo:** 3 productos nunca se han vendido.
+- **Growth:** 2025 sales are about 20% higher than 2024.
+- **Volume without profitability:** Electronics brings in almost half of the revenue, but its margin is ~5% and it generates only ~17% of gross profit.
+- **Dependence on a few customers:** 20% of customers generate more than 70% of revenue, and the top customers are all businesses.
+- **Customers at risk:** about 50 customers who used to buy often have not purchased in months.
+- **Strong seasonality:** December sells 70% more than an average month; July and August around 30% less.
+- **Sales team:** one sales rep bills almost half the team average and has three times the cancellation rate.
+- **Catalogue:** 3 products have never been sold.
 
-## Estructura del proyecto
+## Project structure
 
 ```
 sistema-ventas/
-├── main.py                 # ejecuta todo el proceso
+├── main.py                 # runs the whole process
 ├── sql/
-│   ├── 01_esquema.sql      # tablas, restricciones e índices
-│   ├── 02_vistas.sql       # vista v_ventas_detalle
-│   └── analisis/           # una consulta por pregunta de negocio
+│   ├── 01_esquema.sql      # tables, constraints and indexes
+│   ├── 02_vistas.sql       # v_ventas_detalle view
+│   └── analisis/           # one query per business question
 ├── src/
-│   ├── generar_datos.py    # datos ficticios reproducibles (semilla fija)
-│   ├── base_datos.py       # conexión, carga y ejecución de consultas
-│   └── informe.py          # informe Markdown y conclusiones
-├── reports/informe.md      # resultado generado
-└── tests/test_sistema.py   # pruebas con unittest
+│   ├── generar_datos.py    # reproducible fictional data (fixed seed)
+│   ├── base_datos.py       # connection, loading and query execution
+│   └── informe.py          # Markdown report and conclusions
+├── reports/informe.md      # generated output
+└── tests/test_sistema.py   # tests with unittest
 ```
 
-## Sobre los datos
+## About the data
 
-Los datos son **ficticios** y se generan con una semilla fija, así que siempre son los mismos. Incluyen patrones realistas a propósito (estacionalidad, crecimiento, distribución de Pareto en clientes, categorías con márgenes muy distintos, un vendedor con bajo rendimiento y productos sin ventas) para que el análisis tenga algo que descubrir. Las conclusiones del informe se calculan a partir de los resultados de las consultas, no están escritas a mano.
+The data is **fictional** and generated with a fixed seed, so it is always the same. It deliberately includes realistic patterns (seasonality, growth, a Pareto distribution of customers, categories with very different margins, an underperforming sales rep and products with no sales) so the analysis has something to discover. The conclusions in the report are calculated from the query results, not written by hand.
